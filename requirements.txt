@@ -1,0 +1,6 @@
+librosa == 0.6
+mxnet-cu90
+scipy
+scikit-learn
+matplotlib
+lru-dict
