@@ -1,6 +1,7 @@
+from random import shuffle
+
 from mxnet_audio.library.resnet_v2 import ResNetV2AudioClassifier
-from mxnet_audio.library.utility.gtzan_loader import download_gtzan_genres_if_not_found
-import mxnet
+from mxnet_audio.library.utility.gtzan_loader import download_gtzan_genres_if_not_found, gtzan_labels
 
 
 def load_audio_path_label_pairs(max_allowed_pairs=None):
@@ -23,14 +24,20 @@ def load_audio_path_label_pairs(max_allowed_pairs=None):
 
 def main():
     audio_path_label_pairs = load_audio_path_label_pairs()
+    shuffle(audio_path_label_pairs)
     print('loaded: ', len(audio_path_label_pairs))
 
-    classifier = ResNetV2AudioClassifier(model_ctx=mxnet.gpu(0), data_ctx=mxnet.gpu(0))
-    batch_size = 4
-    epochs = 100
-    history = classifier.fit(audio_path_label_pairs, model_dir_path='./models',
-                             batch_size=batch_size, epochs=epochs,
-                             checkpoint_interval=2)
+    classifier = ResNetV2AudioClassifier()
+    classifier.load_model(model_dir_path='./models')
+
+    for i in range(0, 20):
+        audio_path, actual_label_id = audio_path_label_pairs[i]
+        predicted_label_id = classifier.predict_class(audio_path)
+        print(audio_path)
+        predicted_label = gtzan_labels[predicted_label_id]
+        actual_label = gtzan_labels[actual_label_id]
+
+        print('predicted: ', predicted_label, 'actual: ', actual_label)
 
 
 if __name__ == '__main__':

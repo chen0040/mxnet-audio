@@ -11,13 +11,14 @@ from random import shuffle
 class Conv2DBlock(gluon.HybridBlock):
     def __init__(self, filters, **kwargs):
         super(Conv2DBlock, self).__init__(**kwargs)
-        self.filters = filters
-        self.layer_1 = gluon.nn.BatchNorm()
-        self.act_1 = gluon.nn.Activation('relu')
-        self.conv_1 = gluon.nn.Conv2D(channels=filters, kernel_size=3, padding=1)
-        self.layer_2 = gluon.nn.BatchNorm()
-        self.act_2 = gluon.nn.Activation('relu')
-        self.conv_2 = gluon.nn.Conv2D(channels=filters, kernel_size=3, padding=1)
+        with self.name_scope():
+            self.filters = filters
+            self.layer_1 = gluon.nn.BatchNorm()
+            self.act_1 = gluon.nn.Activation('relu')
+            self.conv_1 = gluon.nn.Conv2D(channels=filters, kernel_size=3, padding=1)
+            self.layer_2 = gluon.nn.BatchNorm()
+            self.act_2 = gluon.nn.Activation('relu')
+            self.conv_2 = gluon.nn.Conv2D(channels=filters, kernel_size=3, padding=1)
 
     def hybrid_forward(self, F, x, *args, **kwargs):
         y = self.layer_1(x)
@@ -35,46 +36,47 @@ class ResNetV2(gluon.HybridBlock):
         self.nb_classes = nb_classes
         self.filters = [32, 64, 128]
 
-        self.layer1_conv2d = gluon.nn.Conv2D(channels=self.filters[0], kernel_size=3, padding=1)
-        self.layer1_pool = gluon.nn.MaxPool2D(padding=1)
+        with self.name_scope():
+            self.layer1_conv2d = gluon.nn.Conv2D(channels=self.filters[0], kernel_size=3, padding=1)
+            self.layer1_pool = gluon.nn.MaxPool2D(padding=1)
 
-        self.layer1_block1 = Conv2DBlock(self.filters[0])
-        self.layer1_block2 = Conv2DBlock(self.filters[0])
-        self.layer1_block3 = Conv2DBlock(self.filters[0])
+            self.layer1_block1 = Conv2DBlock(self.filters[0])
+            self.layer1_block2 = Conv2DBlock(self.filters[0])
+            self.layer1_block3 = Conv2DBlock(self.filters[0])
 
-        self.layer2_conv2d = gluon.nn.Conv2D(channels=self.filters[1], kernel_size=3, strides=2, padding=1,
-                                             activation='softrelu')
-        self.layer2_block1 = Conv2DBlock(self.filters[1])
-        self.layer2_block2 = Conv2DBlock(self.filters[1])
-        self.layer2_block3 = Conv2DBlock(self.filters[1])
+            self.layer2_conv2d = gluon.nn.Conv2D(channels=self.filters[1], kernel_size=3, strides=2, padding=1,
+                                                 activation='softrelu')
+            self.layer2_block1 = Conv2DBlock(self.filters[1])
+            self.layer2_block2 = Conv2DBlock(self.filters[1])
+            self.layer2_block3 = Conv2DBlock(self.filters[1])
 
-        self.layer3_conv2d = gluon.nn.Conv2D(channels=self.filters[2], kernel_size=3, strides=2, padding=1,
-                                             activation='softrelu')
-        self.layer3_block1 = Conv2DBlock(self.filters[2])
-        self.layer3_block2 = Conv2DBlock(self.filters[2])
-        self.layer3_block3 = Conv2DBlock(self.filters[2])
+            self.layer3_conv2d = gluon.nn.Conv2D(channels=self.filters[2], kernel_size=3, strides=2, padding=1,
+                                                 activation='softrelu')
+            self.layer3_block1 = Conv2DBlock(self.filters[2])
+            self.layer3_block2 = Conv2DBlock(self.filters[2])
+            self.layer3_block3 = Conv2DBlock(self.filters[2])
 
-        self.global_avg_pool = gluon.nn.GlobalAvgPool2D()
+            self.global_avg_pool = gluon.nn.GlobalAvgPool2D()
 
-        self.output_layer = gluon.nn.Dense(nb_classes)
+            self.output_layer = gluon.nn.Dense(nb_classes)
 
     def hybrid_forward(self, F, x, *args, **kwargs):
         x1 = self.layer1_conv2d(x)
         y = self.layer1_pool(x1)
 
-        x = F.add(self.layer1_block1(y), y)
-        y = F.add(self.layer1_block2(x), x)
-        x = F.add(self.layer1_block3(y), y)
+        x = self.layer1_block1(y) + y
+        y = self.layer1_block2(x) + x
+        x = self.layer1_block3(y) + y
 
         y = self.layer2_conv2d(x)
-        x = F.add(self.layer2_block1(y), y)
-        y = F.add(self.layer2_block2(x), x)
-        x = F.add(self.layer2_block3(y), y)
+        x = self.layer2_block1(y) + y
+        y = self.layer2_block2(x) + x
+        x = self.layer2_block3(y) + y
 
         y = self.layer3_conv2d(x)
-        x = F.add(self.layer3_block1(y), y)
-        y = F.add(self.layer3_block2(x), x)
-        x = F.add(self.layer3_block3(y), y)
+        x = self.layer3_block1(y) + y
+        y = self.layer3_block2(x) + x
+        x = self.layer3_block3(y) + y
 
         x2 = self.global_avg_pool(x)
         return self.output_layer(x2)
