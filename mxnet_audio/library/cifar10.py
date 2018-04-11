@@ -283,3 +283,34 @@ class Cifar10AudioSearch(Cifar10AudioClassifier):
         return [(path, self.distance(feature, vec, skip_exact_match)) for path, feature in best_k]
 
 
+class Cifar10AudioRecommender(Cifar10AudioSearch):
+
+    def __init__(self, model_ctx=mx.cpu(), data_ctx=mx.cpu()):
+        super(Cifar10AudioRecommender, self).__init__(model_ctx, data_ctx)
+        self.history = []
+
+    def track(self, song_listening_now):
+        if song_listening_now in self.history:
+            self.history.remove(song_listening_now)
+        self.history.append(song_listening_now)
+        if len(self.history) > 10:
+            _, *self.history = self.history
+        return self.history
+
+    def recommend(self, limits=10):
+        listened_songs = set(self.history)
+        recommended_songs = set()
+        for song in self.history:
+            similar_songs = self.query(song, top_k=limits // 2, skip_exact_match=True)
+            for candidate, score in similar_songs:
+                if candidate in listened_songs:
+                    continue
+                recommended_songs.add(candidate)
+
+        lis = list(recommended_songs)
+        shuffle(lis)
+        return lis[:limits] if len(lis) >= limits else lis
+
+
+
+
