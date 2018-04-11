@@ -8,55 +8,80 @@ from mxnet_audio.library.utility.audio_utils import compute_melgram
 from random import shuffle
 
 
-def cifar10(nb_classes):
-    channel_axis = 1
-    freq_axis = 2
-    time_axis = 3
+class Conv2DBlock(gluon.HybridBlock):
+    def __init__(self, filters, **kwargs):
+        super(Conv2DBlock, self).__init__(**kwargs)
+        self.filters = filters
+        self.layer_1 = gluon.nn.BatchNorm()
+        self.act_1 = gluon.nn.Activation('relu')
+        self.conv_1 = gluon.nn.Conv2D(channels=filters, kernel_size=3, padding=1)
+        self.layer_2 = gluon.nn.BatchNorm()
+        self.act_2 = gluon.nn.Activation('relu')
+        self.conv_2 = gluon.nn.Conv2D(channels=filters, kernel_size=3, padding=1)
 
-    activation_func = 'softrelu'
-
-    model = gluon.nn.HybridSequential()
-    with model.name_scope():
-        model.add(gluon.nn.Conv2D(channels=32, kernel_size=3, padding=1))
-        model.add(gluon.nn.BatchNorm(axis=channel_axis))
-        model.add(gluon.nn.Activation(activation_func))
-        model.add(gluon.nn.MaxPool2D(pool_size=(2, 4)))
-
-        model.add(gluon.nn.Conv2D(channels=32, kernel_size=3, padding=1))
-        model.add(gluon.nn.BatchNorm(axis=channel_axis))
-        model.add(gluon.nn.Activation(activation_func))
-        model.add(gluon.nn.MaxPool2D(pool_size=(2, 4)))
-
-        model.add(gluon.nn.Dropout(rate=0.25))
-
-        model.add(gluon.nn.Conv2D(channels=64, kernel_size=3, padding=1))
-        model.add(gluon.nn.BatchNorm(axis=channel_axis))
-        model.add(gluon.nn.Activation(activation_func))
-        model.add(gluon.nn.MaxPool2D(pool_size=(2, 4)))
-
-        model.add(gluon.nn.Conv2D(channels=128, kernel_size=3, padding=1))
-        model.add(gluon.nn.BatchNorm(axis=channel_axis))
-        model.add(gluon.nn.Activation(activation_func))
-        model.add(gluon.nn.MaxPool2D(pool_size=(3, 5)))
-
-        model.add(gluon.nn.Conv2D(channels=256, kernel_size=3, padding=1))
-        model.add(gluon.nn.BatchNorm(axis=channel_axis))
-        model.add(gluon.nn.Activation(activation_func))
-        model.add(gluon.nn.MaxPool2D(pool_size=(4, 4)))
-
-        model.add(gluon.nn.Dropout(0.25))
-
-        model.add(gluon.nn.Flatten())
-        model.add(gluon.nn.Dense(512))
-        model.add(gluon.nn.Activation(activation_func))
-        model.add(gluon.nn.Dropout(0.5))
-        model.add(gluon.nn.Dense(nb_classes))
-
-    return model
+    def hybrid_forward(self, F, x, *args, **kwargs):
+        y = self.layer_1(x)
+        x = self.act_1(y)
+        y = self.conv_1(x)
+        x = self.layer_2(y)
+        y = self.act_2(x)
+        return self.conv_2(y)
 
 
-class Cifar10AudioClassifier(object):
-    model_name = 'cifar10'
+class ResNetV2(gluon.HybridBlock):
+
+    def __init__(self, nb_classes, **kwargs):
+        super(ResNetV2, self).__init__(**kwargs)
+        self.nb_classes = nb_classes
+        self.filters = [32, 64, 128]
+
+        self.layer1_conv2d = gluon.nn.Conv2D(channels=self.filters[0], kernel_size=3, padding=1)
+        self.layer1_pool = gluon.nn.MaxPool2D(padding=1)
+
+        self.layer1_block1 = Conv2DBlock(self.filters[0])
+        self.layer1_block2 = Conv2DBlock(self.filters[0])
+        self.layer1_block3 = Conv2DBlock(self.filters[0])
+
+        self.layer2_conv2d = gluon.nn.Conv2D(channels=self.filters[1], kernel_size=3, strides=2, padding=1,
+                                             activation='softrelu')
+        self.layer2_block1 = Conv2DBlock(self.filters[1])
+        self.layer2_block2 = Conv2DBlock(self.filters[1])
+        self.layer2_block3 = Conv2DBlock(self.filters[1])
+
+        self.layer3_conv2d = gluon.nn.Conv2D(channels=self.filters[2], kernel_size=3, strides=2, padding=1,
+                                             activation='softrelu')
+        self.layer3_block1 = Conv2DBlock(self.filters[2])
+        self.layer3_block2 = Conv2DBlock(self.filters[2])
+        self.layer3_block3 = Conv2DBlock(self.filters[2])
+
+        self.global_avg_pool = gluon.nn.GlobalAvgPool2D()
+
+        self.output_layer = gluon.nn.Dense(nb_classes)
+
+    def hybrid_forward(self, F, x, *args, **kwargs):
+        x1 = self.layer1_conv2d(x)
+        y = self.layer1_pool(x1)
+
+        x = F.add(self.layer1_block1(y), y)
+        y = F.add(self.layer1_block2(x), x)
+        x = F.add(self.layer1_block3(y), y)
+
+        y = self.layer2_conv2d(x)
+        x = F.add(self.layer2_block1(y), y)
+        y = F.add(self.layer2_block2(x), x)
+        x = F.add(self.layer2_block3(y), y)
+
+        y = self.layer3_conv2d(x)
+        x = F.add(self.layer3_block1(y), y)
+        y = F.add(self.layer3_block2(x), x)
+        x = F.add(self.layer3_block3(y), y)
+
+        x2 = self.global_avg_pool(x)
+        return self.output_layer(x2)
+
+
+class ResNetV2AudioClassifier(object):
+    model_name = 'resnet-v2'
 
     def __init__(self, model_ctx=mx.cpu(), data_ctx=mx.cpu()):
         self.cache = LRU(400)
@@ -69,19 +94,19 @@ class Cifar10AudioClassifier(object):
 
     @staticmethod
     def create_model(nb_classes):
-        return cifar10(nb_classes)
+        return ResNetV2(nb_classes)
 
     @staticmethod
     def get_config_file_path(model_dir_path):
-        return os.path.join(model_dir_path, Cifar10AudioClassifier.model_name + '-config.npy')
+        return os.path.join(model_dir_path, ResNetV2AudioClassifier.model_name + '-config.npy')
 
     @staticmethod
     def get_params_file_path(model_dir_path):
-        return os.path.join(model_dir_path, Cifar10AudioClassifier.model_name + '-net.params')
+        return os.path.join(model_dir_path, ResNetV2AudioClassifier.model_name + '-net.params')
 
     def load_model(self, model_dir_path):
-        config_file_path = Cifar10AudioClassifier.get_config_file_path(model_dir_path)
-        params_file_path = Cifar10AudioClassifier.get_params_file_path(model_dir_path)
+        config_file_path = ResNetV2AudioClassifier.get_config_file_path(model_dir_path)
+        params_file_path = ResNetV2AudioClassifier.get_params_file_path(model_dir_path)
         self.config = np.load(config_file_path).item()
         self.input_shape = self.config['input_shape']
         self.nb_classes = self.config['nb_classes']
@@ -169,7 +194,7 @@ class Cifar10AudioClassifier(object):
             random_state=42, input_shape=(1, 96, 1366), nb_classes=10, learning_rate=.001,
             checkpoint_interval=10):
 
-        config_file_path = Cifar10AudioClassifier.get_config_file_path(model_dir_path)
+        config_file_path = ResNetV2AudioClassifier.get_config_file_path(model_dir_path)
 
         self.input_shape = input_shape
         self.nb_classes = nb_classes
@@ -243,7 +268,7 @@ class Cifar10AudioClassifier(object):
         history['acc_train'] = acc_train
         history['acc_test'] = acc_test
 
-        np.save(model_dir_path + '/' + Cifar10AudioClassifier.model_name + '-history.npy', history)
+        np.save(model_dir_path + '/' + ResNetV2AudioClassifier.model_name + '-history.npy', history)
 
         return history
 
