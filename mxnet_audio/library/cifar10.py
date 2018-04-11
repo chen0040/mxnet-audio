@@ -143,7 +143,7 @@ class Cifar10AudioClassifier(object):
         return self._evaluate_accuracy(X, Y, batch_size)
 
     def _evaluate_accuracy(self, X, Y, batch_size=64):
-        data_loader = self.generate_batch(X, Y, batch_size)
+        data_loader = self.generate_batch(X, Y, batch_size, shuffled=False)
 
         softmax_loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
