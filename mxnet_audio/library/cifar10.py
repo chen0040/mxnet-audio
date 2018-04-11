@@ -266,6 +266,9 @@ class Cifar10AudioSearch(Cifar10AudioClassifier):
     def index_audio(self, audio_path):
         self.database.append((audio_path, self.encode_audio(audio_path)))
 
+    def reset(self):
+        self.database = []
+
     @staticmethod
     def distance(v1, v2, skip_exact_match=True):
         dist = np.sqrt(np.sum((v1-v2) ** 2))
@@ -276,6 +279,7 @@ class Cifar10AudioSearch(Cifar10AudioClassifier):
     def query(self, audio_path, top_k=10, skip_exact_match=True):
         vec = self.encode_audio(audio_path)
         result = sorted(self.database, key=lambda x: self.distance(x[1], vec, skip_exact_match),  reverse=False)
-        return result[:top_k] if len(result) >= top_k else result
+        best_k = result[:top_k] if len(result) >= top_k else result
+        return [(path, self.distance(feature, vec, skip_exact_match)) for path, feature in best_k]
 
 

@@ -205,9 +205,7 @@ The [sample codes](demo/cifar10_search_music.py) shows how to use the trained Ci
 similar musics given a music file:
 
 ```python
-from random import shuffle
-
-from mxnet_audio.library.cifar10 import Cifar10AudioClassifier
+from mxnet_audio.library.cifar10 import Cifar10AudioSearch
 from mxnet_audio.library.utility.gtzan_loader import download_gtzan_genres_if_not_found
 
 
@@ -230,19 +228,16 @@ def load_audio_path_label_pairs(max_allowed_pairs=None):
 
 
 def main():
-    audio_path_label_pairs = load_audio_path_label_pairs()
-    shuffle(audio_path_label_pairs)
-    print('loaded: ', len(audio_path_label_pairs))
+    search_engine = Cifar10AudioSearch()
+    search_engine.load_model(model_dir_path='./models')
+    for path, _ in load_audio_path_label_pairs():
+        search_engine.index_audio(path)
 
-    classifier = Cifar10AudioClassifier()
-    classifier.load_model(model_dir_path='./models')
+    query_audio = './data/audio_samples/example.mp3'
+    search_result = search_engine.query(query_audio, top_k=10)
 
-    for i in range(0, 20):
-        audio_path, actual_label_id = audio_path_label_pairs[i]
-        audio2vec = classifier.encode_audio(audio_path)
-        print(audio_path)
-
-        print('audio-to-vec: ', audio2vec)
+    for idx, similar_audio in enumerate(search_result):
+        print('result #%s: %s' % (idx+1, similar_audio))
 
 
 if __name__ == '__main__':
