@@ -32,7 +32,7 @@ def main():
     # create fake user history on musics listening to
     shuffle(music_archive)
     for i in range(30):
-        song_i_am_listening = music_archive[i]
+        song_i_am_listening = music_archive[i][0]
         music_recommender.track(song_i_am_listening)
 
     for idx, similar_audio in enumerate(music_recommender.recommend(limits=10)):
