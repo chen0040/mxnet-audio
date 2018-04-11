@@ -1,4 +1,4 @@
-from mxnet_audio.library.cifar10 import Cifar10AudioClassifier
+from mxnet_audio.library.resnet_v2 import ResNetV2AudioClassifier
 from mxnet_audio.library.utility.gtzan_loader import download_gtzan_genres_if_not_found
 import mxnet
 
@@ -25,7 +25,7 @@ def main():
     audio_path_label_pairs = load_audio_path_label_pairs()
     print('loaded: ', len(audio_path_label_pairs))
 
-    classifier = Cifar10AudioClassifier(model_ctx=mxnet.gpu(0), data_ctx=mxnet.gpu(0))
+    classifier = ResNetV2AudioClassifier(model_ctx=mxnet.gpu(0), data_ctx=mxnet.gpu(0))
     batch_size = 8
     epochs = 100
     history = classifier.fit(audio_path_label_pairs, model_dir_path='./models',
