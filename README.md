@@ -3,9 +3,7 @@
 Implementation of music genre classification, audio-to-vec, song recommender, and music search in mxnet
 
 
-# Features
-
-### Audio Classification
+# Principles
 
 * The classifier [ResNetV2AudioClassifier](mxnet_audio/library/resnet_v2.py) converts audio into mel-spectrogram and uses a simplified
  resnet DCnn architecture to classifier audios based on its associated labels. 
@@ -20,13 +18,14 @@ The classifiers differ from those used in image classification in that:
 
 # Usage
 
-### Train a audio classifier
+### Train a deep learning model
 
-The audio classification uses [Gtzan](http://opihi.cs.uvic.ca/sound/genres.tar.gz) data set to train the
+The audio training uses [Gtzan](http://opihi.cs.uvic.ca/sound/genres.tar.gz) data set to train the
 music classifier to recognize the genre of songs. 
 
-The classification works by converting audio or song file into a mel-spectrogram which can be thought of
-a 3-dimension matrix in a similar manner to an image 
+The training works by converting audio or song file into a mel-spectrogram which can be thought of
+a 3-dimension tensor in a similar manner to an image. With the trained model, it is possible to build other interesting
+application such as music recommendation, music search, audio2vec, etc.
 
 To train on the Gtzan data set, run the following command:
 
