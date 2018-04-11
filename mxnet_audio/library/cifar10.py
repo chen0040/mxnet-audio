@@ -5,7 +5,7 @@ from mxnet import nd, autograd, gluon
 import os
 from lru import LRU
 from mxnet_audio.library.utility.audio_utils import compute_melgram
-
+from random import shuffle
 
 def cifar10(nb_classes, ctx):
     channel_axis = 1
@@ -97,10 +97,13 @@ class Cifar10AudioClassifier(object):
             self.cache[audio_path] = mg
             return mg
 
-    def generate_batch(self, audio_paths, labels, batch_size):
+    def generate_batch(self, audio_paths, labels, batch_size, shuffled):
         num_batches = len(audio_paths) // batch_size
         while True:
-            for batchIdx in range(0, num_batches):
+            batch_index_list = list(range(0, num_batches))
+            if shuffled:
+                shuffle(batch_index_list)
+            for batchIdx in batch_index_list:
                 start = batchIdx * batch_size
                 end = (batchIdx + 1) * batch_size
 
@@ -144,14 +147,21 @@ class Cifar10AudioClassifier(object):
 
         softmax_loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
+        num_batches = len(X) // batch_size
+
         metric = mx.metric.Accuracy()
         loss_avg = 0.
         for i, (data, label) in enumerate(data_loader):
+            data = data.as_in_context(self.model_ctx)
+            label = label.as_in_context(self.model_ctx)
             output = self.model(data)
             predictions = nd.argmax(output, axis=1)
-            loss = softmax_loss(predictions, label)
+            loss = softmax_loss(output, label)
             metric.update(preds=predictions, labels=label)
             loss_avg = loss_avg * i / (i + 1) + nd.mean(loss).asscalar() / (i + 1)
+
+            if i + 1 == num_batches:
+                break
         return metric.get()[1], loss_avg
 
     def fit(self, audio_path_label_pairs, model_dir_path, batch_size=64, epochs=20, test_size=0.2,
@@ -174,7 +184,7 @@ class Cifar10AudioClassifier(object):
 
         Xtrain, Xtest, Ytrain, Ytest = train_test_split(X, Y, test_size=test_size, random_state=random_state)
 
-        train_gen = self.generate_batch(Xtrain, Ytrain, batch_size)
+        train_gen = self.generate_batch(Xtrain, Ytrain, batch_size, shuffled=True)
 
         train_num_batches = len(Xtrain) // batch_size
 
@@ -206,8 +216,10 @@ class Cifar10AudioClassifier(object):
                 loss.backward()
                 trainer.step(data.shape[0])
                 loss_avg = loss_avg * batch_index / (batch_index + 1) + nd.mean(loss).asscalar() / (batch_index + 1)
-                print("Epoch %s / %s, Batch %s / %s. Loss: %s" %
-                      (e + 1, epochs, batch_index + 1, train_num_batches, loss_avg))
+                print("Epoch %s / %s, Batch %s / %s. Loss: %s, Accuracy: %s" %
+                      (e + 1, epochs, batch_index + 1, train_num_batches, loss_avg, accuracy.get()[1]))
+                if batch_index+1 == train_num_batches:
+                    break
             train_acc = accuracy.get()[1]
             acc_train.append(train_acc)
             loss_train.append(loss_avg)

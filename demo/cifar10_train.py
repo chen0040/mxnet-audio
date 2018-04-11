@@ -24,7 +24,7 @@ def main():
     audio_path_label_pairs = load_audio_path_label_pairs()
     print('loaded: ', len(audio_path_label_pairs))
 
-    classifier = Cifar10AudioClassifier(model_ctx=mxnet.gpu(0))
+    classifier = Cifar10AudioClassifier(model_ctx=mxnet.gpu(0), data_ctx=mxnet.gpu(0))
     batch_size = 4
     epochs = 100
     history = classifier.fit(audio_path_label_pairs, model_dir_path='./models',
