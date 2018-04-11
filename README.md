@@ -202,7 +202,7 @@ if __name__ == '__main__':
 
 ### Music Search Engine
 
-The [sample codes](demo/cifar10_search_music.py) shows how to use the trained Cifar10AudioClassifier model to search for
+The [sample codes](demo/cifar10_search_music.py) shows how to use Cifar10AudioSearch with the trained model to search for
 similar musics given a music file:
 
 ```python
