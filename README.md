@@ -152,15 +152,6 @@ if __name__ == '__main__':
 
 ```
 
-# Configure to run on GPU on Windows
-
-* Step 1: Change tensorflow to tensorflow-gpu in requirements.txt and install tensorflow-gpu
-* Step 2: Download and install the [CUDA® Toolkit 9.0](https://developer.nvidia.com/cuda-90-download-archive) (Please note that
-currently CUDA® Toolkit 9.1 is not yet supported by tensorflow, therefore you should download CUDA® Toolkit 9.0)
-* Step 3: Download and unzip the [cuDNN 7.4 for CUDA@ Toolkit 9.0](https://developer.nvidia.com/cudnn) and add the
-bin folder of the unzipped directory to the $PATH of your Windows environment 
-
-
 # Note
 
 ### On pre-processing
@@ -182,29 +173,15 @@ and download the shared linking build, unzip to a local directory and then add t
 ffmpeg to the Windows $PATH environment variable. Restart your cmd or powershell, Python should now be
 able to locate the backend for audioread in librosa
 
-### Export trained model as tensorflow pb model file
+### Training with GPU
 
-To export the trained mxnet model as tensorflow graph model file, run the following command:
+Note that the default training scripts in the [demo](demo) folder use GPU for training, therefore, you must configure your
+graphic card for this (or remove the "model_ctx=mxnet.gpu(0)" in the training scripts). 
 
-```bash
-cd demo
-python cifar10_tensorflow_export_model.py
-```
 
-The script [demo/cifar10_tensorflow_export_model.py](demo/cifar10_tensorflow_export_model.py) export the trained model
-as [demo/mdoels/tensorflow_models/cifar10/cifar10.pb](demo/models/tensorflow_models/cifar10/cifar10.pb) 
-
-To test the exported tensorflow graph model file, run the following command:
-
-```bash
-cd demo
-python cifar10_tensorflow_classifier.py
-```
-
-The script [demo/cifar10_tensorflow_classifier.py](demo/cifar10_tensorflow_classifier.py) uses pure tensorflow code
-to load the [cifar10.pb](demo/models/tensorflow_models/cifar10/cifar10.pb) and uses it to predict genres of the 
-songs
-
+* Step 1: Download and install the [CUDA® Toolkit 9.0](https://developer.nvidia.com/cuda-90-download-archive) (you should download CUDA® Toolkit 9.0)
+* Step 2: Download and unzip the [cuDNN 7.0.4 for CUDA@ Toolkit 9.0](https://developer.nvidia.com/cudnn) and add the
+bin folder of the unzipped directory to the $PATH of your Windows environment 
 
 
 

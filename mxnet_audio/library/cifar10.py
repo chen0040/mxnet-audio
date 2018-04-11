@@ -3,54 +3,52 @@ from sklearn.model_selection import train_test_split
 import mxnet as mx
 from mxnet import nd, autograd, gluon
 import scipy.misc
+import os
 from lru import LRU
 from mxnet_audio.library.utility.audio_utils import compute_melgram
 
 
-def cifar10(input_shape, nb_classes):
+def cifar10(nb_classes):
     channel_axis = 3
     freq_axis = 1
     time_axis = 2
 
     model = gluon.nn.Sequential()
     with model.name_scope():
-        model.add(Conv2D(filters=32, input_shape=input_shape, padding='same', kernel_size=(3, 3)))
-        model.add(BatchNormalization(axis=channel_axis))
-        model.add(Activation('elu'))
-        model.add(MaxPooling2D(pool_size=(2, 4)))
+        model.add(gluon.nn.Conv2D(channels=32, kernel_size=3))
+        model.add(gluon.nn.BatchNorm(axis=channel_axis))
+        model.add(gluon.nn.Activation('elu'))
+        model.add(gluon.nn.MaxPool2D(pool_size=(2, 4)))
 
-        model.add(Conv2D(filters=32, padding='same', kernel_size=(3, 3)))
-        model.add(BatchNormalization(axis=channel_axis))
-        model.add(Activation('elu'))
-        model.add(MaxPooling2D(pool_size=(2, 4)))
+        model.add(gluon.nn.Conv2D(channels=32, kernel_size=3))
+        model.add(gluon.nn.BatchNorm(axis=channel_axis))
+        model.add(gluon.nn.Activation('elu'))
+        model.add(gluon.nn.MaxPool2D(pool_size=(2, 4)))
 
-        model.add(Dropout(rate=0.25))
+        model.add(gluon.nn.Dropout(rate=0.25))
 
-        model.add(Conv2D(filters=64, kernel_size=(3, 3), padding='same', input_shape=input_shape))
-        model.add(BatchNormalization(axis=channel_axis))
-        model.add(Activation('elu'))
-        model.add(MaxPooling2D(pool_size=(2, 4)))
+        model.add(gluon.nn.Conv2D(channels=64, kernel_size=3))
+        model.add(gluon.nn.BatchNorm(axis=channel_axis))
+        model.add(gluon.nn.Activation('elu'))
+        model.add(gluon.nn.MaxPool2D(pool_size=(2, 4)))
 
-        model.add(Conv2D(filters=128, padding='same', kernel_size=(3, 3)))
-        model.add(BatchNormalization(axis=channel_axis))
-        model.add(Activation('elu'))
-        model.add(MaxPooling2D(pool_size=(3, 5)))
+        model.add(gluon.nn.Conv2D(channels=128, kernel_size=3))
+        model.add(gluon.nn.BatchNorm(axis=channel_axis))
+        model.add(gluon.nn.Activation('elu'))
+        model.add(gluon.nn.MaxPool2D(pool_size=(3, 5)))
 
-        model.add(Conv2D(filters=256, padding='same', kernel_size=(3, 3)))
-        model.add(BatchNormalization(axis=channel_axis))
-        model.add(Activation('elu'))
-        model.add(MaxPooling2D(pool_size=(4, 4)))
+        model.add(gluon.nn.Conv2D(channels=256, kernel_size=3))
+        model.add(gluon.nn.BatchNorm(axis=channel_axis))
+        model.add(gluon.nn.Activation('elu'))
+        model.add(gluon.nn.MaxPool2D(pool_size=(4, 4)))
 
-        model.add(Dropout(rate=0.25))
-    
-        model.add(Flatten())
-        model.add(Dense(units=512))
-        model.add(Activation('elu'))
-        model.add(Dropout(rate=0.5))
-        model.add(Dense(units=nb_classes))
-        model.add(Activation('softmax'))
+        model.add(gluon.nn.Dropout(0.25))
 
-    model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+        model.add(gluon.nn.Flatten())
+        model.add(gluon.nn.Dense(512))
+        model.add(gluon.nn.Activation('elu'))
+        model.add(gluon.nn.Dropout(0.5))
+        model.add(gluon.nn.Dense(nb_classes))
 
     return model
 
@@ -58,39 +56,35 @@ def cifar10(input_shape, nb_classes):
 class Cifar10AudioClassifier(object):
     model_name = 'cifar10'
 
-    def __init__(self):
+    def __init__(self, model_ctx=mx.cpu(), data_ctx=mx.cpu()):
         self.cache = LRU(400)
         self.input_shape = None
         self.nb_classes = None
         self.model = None
         self.config = None
+        self.model_ctx = model_ctx
+        self.data_ctx = data_ctx
 
-    def create_model(self):
-        self.model = cifar10(input_shape=self.input_shape, nb_classes=self.nb_classes)
-        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-        print(self.model.summary())
+    @staticmethod
+    def create_model():
+        return cifar10(nb_classes=self.nb_classes)
 
     @staticmethod
     def get_config_file_path(model_dir_path):
         return os.path.join(model_dir_path, Cifar10AudioClassifier.model_name + '-config.npy')
 
     @staticmethod
-    def get_architecture_file_path(model_dir_path):
-        return os.path.join(model_dir_path, Cifar10AudioClassifier.model_name + '-architecture.json')
-
-    @staticmethod
-    def get_weight_file_path(model_dir_path):
-        return os.path.join(model_dir_path, Cifar10AudioClassifier.model_name + '-weights.h5')
+    def get_params_file_path(model_dir_path):
+        return os.path.join(model_dir_path, Cifar10AudioClassifier.model_name + '-net.params')
 
     def load_model(self, model_dir_path):
         config_file_path = Cifar10AudioClassifier.get_config_file_path(model_dir_path)
-        weight_file_path = Cifar10AudioClassifier.get_weight_file_path(model_dir_path)
+        params_file_path = Cifar10AudioClassifier.get_params_file_path(model_dir_path)
         self.config = np.load(config_file_path).item()
         self.input_shape = self.config['input_shape']
         self.nb_classes = self.config['nb_classes']
-        self.create_model()
-        self.model.load_weights(weight_file_path)
+        self.model = self.create_model()
+        self.model.load_params(params_file_path)
 
     def compute_melgram(self, audio_path):
         if audio_path in self.cache:
@@ -108,47 +102,23 @@ class Cifar10AudioClassifier(object):
                 start = batchIdx * batch_size
                 end = (batchIdx + 1) * batch_size
 
-                X = np.zeros(shape=(batch_size, self.input_shape[0], self.input_shape[1], self.input_shape[2]), dtype=np.float32)
+                X = np.zeros(shape=(batch_size, self.input_shape[0], self.input_shape[1], self.input_shape[2]),
+                             dtype=np.float32)
                 for i in range(start, end):
                     audio_path = audio_paths[i]
                     mg = compute_melgram(audio_path)
                     X[i - start, :, :, :] = mg
-                yield X, labels[start:end]
+                yield nd.array(X, ctx=self.model_ctx), nd.array(labels[start:end], ctx=self.model_ctx)
 
-    def fit(self, audio_path_label_pairs, model_dir_path, batch_size=None, epochs=None, test_size=None,
-            random_state=None, input_shape=None, nb_classes=None):
-        if batch_size is None:
-            batch_size = 64
-        if epochs is None:
-            epochs = 20
-        if test_size is None:
-            test_size = 0.2
-        if random_state is None:
-            random_state = 42
-        if input_shape is None:
-            input_shape = (96, 1366, 1)
-        if nb_classes is None:
-            nb_classes = 10
+    @staticmethod
+    def one_hot(y, nb_classes):
+        result = np.zeros(shape=(len(y), nb_classes))
+        for i, label in enumerate(y):
+            result[i, label] = 1
+        return result
 
-        config_file_path = Cifar10AudioClassifier.get_config_file_path(model_dir_path)
-        weight_file_path = Cifar10AudioClassifier.get_weight_file_path(model_dir_path)
-        architecture_file_path = Cifar10AudioClassifier.get_architecture_file_path(model_dir_path)
-
-        self.input_shape = input_shape
-        self.nb_classes = nb_classes
-
-        self.config = dict()
-        self.config['input_shape'] = input_shape
-        self.config['nb_classes'] = nb_classes
-        np.save(config_file_path, self.config)
-
-        self.create_model()
-
-        with open(architecture_file_path, 'wt') as file:
-            file.write(self.model.to_json())
-
-        checkpoint = ModelCheckpoint(weight_file_path)
-
+    @staticmethod
+    def unzip(audio_path_label_pairs):
         X = []
         Y = []
 
@@ -158,8 +128,46 @@ class Cifar10AudioClassifier(object):
 
         X = np.array(X)
         Y = np.array(Y)
+        return X, Y
 
-        Y = np_utils.to_categorical(Y, self.nb_classes)
+    def checkpoint(self, model_dir_path):
+        self.model.save_params(self.get_params_file_path(model_dir_path))
+
+    def evaluate_accuracy(self, audio_path_label_pairs, batch_size=64):
+        X, Y = self.unzip(audio_path_label_pairs)
+        return self._evaluate_accuracy(X, Y, batch_size)
+
+    def _evaluate_accuracy(self, X, Y, batch_size=64):
+        data_loader = self.generate_batch(X, Y, batch_size)
+
+        softmax_loss = gluon.loss.SoftmaxCrossEntropyLoss()
+
+        metric = mx.metric.Accuracy()
+        loss_avg = 0.
+        for i, (data, label) in enumerate(data_loader):
+            predictions = self.model(data)
+            loss = softmax_loss(predictions, label)
+            metric.update(preds=predictions, labels=label)
+            loss_avg = loss_avg * i / (i + 1) + nd.mean(loss).asscalar() / (i + 1)
+        return metric.get()[1], loss_avg
+
+    def fit(self, audio_path_label_pairs, model_dir_path, batch_size=64, epochs=20, test_size=0.2,
+            random_state=42, input_shape=(96, 1366, 1), nb_classes=10, learning_rate=.001,
+            checkpoint_interval=10):
+
+        config_file_path = Cifar10AudioClassifier.get_config_file_path(model_dir_path)
+
+        self.input_shape = input_shape
+        self.nb_classes = nb_classes
+
+        self.config = dict()
+        self.config['input_shape'] = input_shape
+        self.config['nb_classes'] = nb_classes
+        np.save(config_file_path, self.config)
+
+        self.model = self.create_model()
+
+        X, Y = self.unzip(audio_path_label_pairs)
 
         Xtrain, Xtest, Ytrain, Ytest = train_test_split(X, Y, test_size=test_size, random_state=random_state)
 
@@ -169,13 +177,56 @@ class Cifar10AudioClassifier(object):
         train_num_batches = len(Xtrain) // batch_size
         test_num_batches = len(Xtest) // batch_size
 
-        history = self.model.fit_generator(generator=train_gen, steps_per_epoch=train_num_batches,
-                                           epochs=epochs,
-                                           verbose=1, validation_data=test_gen, validation_steps=test_num_batches,
-                                           callbacks=[checkpoint])
-        self.model.save_weights(weight_file_path)
+        self.model.collect_params().initialize(mx.init.Xavier(magnitude=2.24), ctx=self.model_ctx)
+        trainer = gluon.Trainer(self.model.collect_params(), optimizer='adam', optimizer_params={
+            'learning_rate': learning_rate
+        })
 
-        np.save(os.path.join(model_dir_path, Cifar10AudioClassifier.model_name + '-history.npy'), history.history)
+        softmax_loss = gluon.loss.SoftmaxCrossEntropyLoss()
+
+        history = dict()
+        loss_train = []
+        loss_test = []
+        acc_train = []
+        acc_test = []
+
+        for e in range(epochs):
+            loss_avg = 0.
+            accuracy = mx.metric.Acurracy()
+            for batch_index, (data, label) in enumerate(train_gen):
+                with autograd.record():
+                    output = self.model(data)
+                    accuracy.update(preds=output, labels=label)
+                    loss = softmax_loss(output, label)
+                loss.backward()
+                trainer.step(data.shape[0])
+                loss_avg = loss_avg * batch_index / (batch_index + 1) + nd.mean(loss).asscalar() / (batch_index + 1)
+                print("Epoch %s / %s, Batch %s / %s. Loss: %s" %
+                      (e + 1, epochs, batch_index + 1, train_num_batches, loss_avg))
+            train_acc = accuracy.get()[1]
+            acc_train.append(train_acc)
+            loss_train.append(loss_avg)
+
+            test_acc, test_avg_loss = self._evaluate_accuracy(Xtest, Ytest,
+                                                             batch_size=batch_size)
+            acc_test.append(test_acc)
+            loss_test.append(test_avg_loss)
+
+            print("Epoch %s / %s. Loss: %s. Accuracy: %s. Test Accuracy: %s." %
+                  (e + 1, epochs, loss_avg, train_acc, test_acc))
+
+            if e % checkpoint_interval == 0:
+                self.checkpoint(model_dir_path)
+
+        self.checkpoint(model_dir_path)
+
+        history['loss_train'] = loss_train
+        history['loss_test'] = loss_test
+        history['acc_train'] = acc_train
+        history['acc_test'] = acc_test
+
+        np.save(model_dir_path + '/' + Cifar10AudioClassifier.model_name + '-history.npy', history)
+
         return history
 
     def predict(self, audio_path):
@@ -188,11 +239,11 @@ class Cifar10AudioClassifier(object):
         return np.argmax(predicted)
 
     def export_tensorflow_model(self, output_fld, output_model_file=None,
-                                 output_graphdef_file=None,
-                                 num_output=None,
+                                output_graphdef_file=None,
+                                num_output=None,
                                 quantize=False,
                                 save_output_graphdef_file=False,
-                                 output_node_prefix=None):
+                                output_node_prefix=None):
 
         K.set_learning_phase(0)
 
