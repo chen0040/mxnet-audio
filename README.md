@@ -1,5 +1,6 @@
 # mxnet-audio
-Implementation of mxnet-audio in mxnet
+
+Implementation of music genre classification, audio-to-vec, and music search in mxnet
 
 
 # Features
