@@ -10,11 +10,9 @@ Implementation of mxnet-audio in mxnet
  resnet DCnn architecture to classifier audios based on its associated labels. 
 * The classifier [Cifar10AudioClassifier](mxnet_audio/library/cifar10.py) converts audio into mel-spectrogram and uses the cifar-10
 DCnn architecture to classifier audios based on its associated labels. 
-* The classifier [ResNet50AudioClassifier](mxnet_audio/library/resnet50.py) converts audio into mel-spectrogram and uses the resnet-50
-DCnn architecture to classifier audios based on its associated labels. 
 
 The classifiers differ from those used in image classification in that:
-* they use ELU instead RELU. 
+* they use softrelu instead relu. 
 * they have elongated max pooling shape (as the mel-spectrogram is elongated "image")
 * Dropout being added 
 
@@ -86,8 +84,7 @@ After training, the trained models are saved to [demo/models](demo/models).
 
 ### Model Comparison
 
-Currently [ResNet50AudioClassifier](mxnet_audio/library/resnet50.py) is too expensive to run on my hardware (OOM exception
-from GPU). Below compares training quality of 
+Below compares training quality of 
 [ResNetV2AudioClassifier](mxnet_audio/library/resnet_v2.py) and [Cifar10AudioClassifier](mxnet_audio/library/cifar10.py):
 
 ![training-comppare](demo/models/training-history-comparison.png)
