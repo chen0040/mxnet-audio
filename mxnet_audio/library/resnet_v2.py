@@ -274,8 +274,8 @@ class ResNetV2AudioClassifier(object):
 
     def predict(self, audio_path):
         mg = compute_melgram(audio_path)
-        mg = np.expand_dims(mg, axis=0)
-        return self.model(mg)[0].asnumpy()
+        mg = nd.array(np.expand_dims(mg, axis=0), ctx=self.model_ctx)
+        return self.model(mg).asnumpy()[0]
 
     def predict_class(self, audio_path):
         predicted = self.predict(audio_path)
