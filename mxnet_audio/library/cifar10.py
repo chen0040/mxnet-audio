@@ -247,11 +247,35 @@ class Cifar10AudioClassifier(object):
 
         return history
 
-    def predict(self, audio_path):
+    def encode_audio(self, audio_path):
         mg = compute_melgram(audio_path)
         mg = nd.array(np.expand_dims(mg, axis=0), ctx=self.model_ctx)
         return self.model(mg).asnumpy()[0]
 
     def predict_class(self, audio_path):
-        predicted = self.predict(audio_path)
+        predicted = self.encode_audio(audio_path)
         return np.argmax(predicted)
+
+
+class Cifar10AudioSearch(Cifar10AudioClassifier):
+
+    def __init__(self, model_ctx=mx.cpu(), data_ctx=mx.cpu()):
+        super(Cifar10AudioSearch, self).__init__(model_ctx, data_ctx)
+        self.database = []
+
+    def index_audio(self, audio_path):
+        self.database.append((audio_path, self.encode_audio(audio_path)))
+
+    @staticmethod
+    def distance(v1, v2, skip_exact_match=True):
+        dist = np.sqrt(np.sum((v1-v2) ** 2))
+        if skip_exact_match and dist == 0:
+            return 10000000000
+        return dist
+
+    def query(self, audio_path, top_k=10, skip_exact_match=True):
+        vec = self.encode_audio(audio_path)
+        result = sorted(self.database, key=lambda x: self.distance(x[1], vec, skip_exact_match),  reverse=False)
+        return result[:top_k] if len(result) >= top_k else result
+
+

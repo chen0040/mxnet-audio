@@ -17,7 +17,7 @@ The classifiers differ from those used in image classification in that:
 * Dropout being added 
 
 
-# Usage: Audio Classification
+# Usage
 
 ### Train a audio classifier
 
@@ -79,6 +79,14 @@ if __name__ == '__main__':
 
 After training, the trained models are saved to [demo/models](demo/models). 
 
+To test the trained Cifar10AudioClassifier model, run the following command:
+
+```bash
+cd demo
+python cifar10_predict.py
+```
+
+
 ### Model Comparison
 
 Below compares training quality of 
@@ -87,16 +95,10 @@ Below compares training quality of
 ![training-comppare](demo/models/training-history-comparison.png)
 
 
-### Test trained model
+### Predict Music Genres
 
-To test the trained Cifar10AudioClassifier model, run the following command:
-
-```bash
-cd demo
-python cifar10_predict.py
-```
-
-The [sample codes](demo/cifar10_predict.py) shows how to test the trained Cifar10AudioClassifier model:
+The [sample codes](demo/cifar10_predict.py) shows how to use the trained Cifar10AudioClassifier model to predict the
+music genres:
 
 ```python
 from random import shuffle
@@ -145,6 +147,110 @@ if __name__ == '__main__':
     main()
 
 ```
+
+### Audio to Vector
+
+The [sample codes](demo/cifar10_encode_audio.py) shows how to use the trained Cifar10AudioClassifier model to encode an
+audio file into a fixed-length numerical vector:
+
+```python
+from random import shuffle
+
+from mxnet_audio.library.cifar10 import Cifar10AudioClassifier
+from mxnet_audio.library.utility.gtzan_loader import download_gtzan_genres_if_not_found
+
+
+def load_audio_path_label_pairs(max_allowed_pairs=None):
+    download_gtzan_genres_if_not_found('./very_large_data/gtzan')
+    audio_paths = []
+    with open('./data/lists/test_songs_gtzan_list.txt', 'rt') as file:
+        for line in file:
+            audio_path = './very_large_data/' + line.strip()
+            audio_paths.append(audio_path)
+    pairs = []
+    with open('./data/lists/test_gt_gtzan_list.txt', 'rt') as file:
+        for line in file:
+            label = int(line)
+            if max_allowed_pairs is None or len(pairs) < max_allowed_pairs:
+                pairs.append((audio_paths[len(pairs)], label))
+            else:
+                break
+    return pairs
+
+
+def main():
+    audio_path_label_pairs = load_audio_path_label_pairs()
+    shuffle(audio_path_label_pairs)
+    print('loaded: ', len(audio_path_label_pairs))
+
+    classifier = Cifar10AudioClassifier()
+    classifier.load_model(model_dir_path='./models')
+
+    for i in range(0, 20):
+        audio_path, actual_label_id = audio_path_label_pairs[i]
+        audio2vec = classifier.encode_audio(audio_path)
+        print(audio_path)
+
+        print('audio-to-vec: ', audio2vec)
+
+
+if __name__ == '__main__':
+    main()
+
+```
+
+### Music Search Engine
+
+The [sample codes](demo/cifar10_search_music.py) shows how to use the trained Cifar10AudioClassifier model to search for
+similar musics given a music file:
+
+```python
+from random import shuffle
+
+from mxnet_audio.library.cifar10 import Cifar10AudioClassifier
+from mxnet_audio.library.utility.gtzan_loader import download_gtzan_genres_if_not_found
+
+
+def load_audio_path_label_pairs(max_allowed_pairs=None):
+    download_gtzan_genres_if_not_found('./very_large_data/gtzan')
+    audio_paths = []
+    with open('./data/lists/test_songs_gtzan_list.txt', 'rt') as file:
+        for line in file:
+            audio_path = './very_large_data/' + line.strip()
+            audio_paths.append(audio_path)
+    pairs = []
+    with open('./data/lists/test_gt_gtzan_list.txt', 'rt') as file:
+        for line in file:
+            label = int(line)
+            if max_allowed_pairs is None or len(pairs) < max_allowed_pairs:
+                pairs.append((audio_paths[len(pairs)], label))
+            else:
+                break
+    return pairs
+
+
+def main():
+    audio_path_label_pairs = load_audio_path_label_pairs()
+    shuffle(audio_path_label_pairs)
+    print('loaded: ', len(audio_path_label_pairs))
+
+    classifier = Cifar10AudioClassifier()
+    classifier.load_model(model_dir_path='./models')
+
+    for i in range(0, 20):
+        audio_path, actual_label_id = audio_path_label_pairs[i]
+        audio2vec = classifier.encode_audio(audio_path)
+        print(audio_path)
+
+        print('audio-to-vec: ', audio2vec)
+
+
+if __name__ == '__main__':
+    main()
+
+```
+
+
 
 # Note
 
