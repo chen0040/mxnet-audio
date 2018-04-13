@@ -1,18 +1,22 @@
 from random import shuffle
+import os
+import sys
 
-from mxnet_audio.library.cifar10 import Cifar10AudioRecommender
-from mxnet_audio.library.utility.gtzan_loader import download_gtzan_genres_if_not_found
+
+def patch_path(path):
+    return os.path.join(os.path.dirname(__file__), path)
 
 
 def load_audio_path_label_pairs(max_allowed_pairs=None):
-    download_gtzan_genres_if_not_found('./very_large_data/gtzan')
+    from mxnet_audio.library.utility.gtzan_loader import download_gtzan_genres_if_not_found
+    download_gtzan_genres_if_not_found(patch_path('very_large_data/gtzan'))
     audio_paths = []
-    with open('./data/lists/test_songs_gtzan_list.txt', 'rt') as file:
+    with open(patch_path('data/lists/test_songs_gtzan_list.txt'), 'rt') as file:
         for line in file:
-            audio_path = './very_large_data/' + line.strip()
+            audio_path = patch_path('very_large_data/' + line.strip())
             audio_paths.append(audio_path)
     pairs = []
-    with open('./data/lists/test_gt_gtzan_list.txt', 'rt') as file:
+    with open(patch_path('data/lists/test_gt_gtzan_list.txt'), 'rt') as file:
         for line in file:
             label = int(line)
             if max_allowed_pairs is None or len(pairs) < max_allowed_pairs:
@@ -23,8 +27,11 @@ def load_audio_path_label_pairs(max_allowed_pairs=None):
 
 
 def main():
+    sys.path.append(patch_path('..'))
+
+    from mxnet_audio.library.cifar10 import Cifar10AudioRecommender
     music_recommender = Cifar10AudioRecommender()
-    music_recommender.load_model(model_dir_path='./models')
+    music_recommender.load_model(model_dir_path=patch_path('models'))
     music_archive = load_audio_path_label_pairs()
     for path, _ in music_archive:
         music_recommender.index_audio(path)

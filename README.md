@@ -18,6 +18,14 @@ The classifiers differ from those used in image classification in that:
 
 # Usage
 
+### Dependencies
+
+Make sure you have the right dependencies in your python environment by running:
+
+```bash
+pip install -r requirements.txt
+```
+
 ### Train a deep learning model
 
 The audio training uses [Gtzan](http://opihi.cs.uvic.ca/sound/genres.tar.gz) data set to train the

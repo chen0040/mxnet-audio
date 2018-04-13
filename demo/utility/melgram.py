@@ -1,14 +1,15 @@
 import os
 import matplotlib
-
-from mxnet_audio.library.utility.audio_utils import compute_melgram
-
-matplotlib.use('Agg')  # No pictures displayed
+import sys
 import pylab
 from matplotlib import pyplot as plt
 import librosa
 import librosa.display
 import numpy as np
+
+
+def patch_path(path):
+    return os.path.join(os.path.dirname(__file__), '..', path)
 
 
 def melgram_v1(audio_file_path, to_file):
@@ -51,9 +52,11 @@ def melgram_v2(audio_file_path):
 
 
 def main():
-    audio_file_path = '../data/audio_samples/example.mp3'
-    # melgram_v1(audio_file_path, '../data/output/example_mp3.png')
-    # melgram_v2(audio_file_path)
+    sys.path.append(patch_path('..'))
+
+    audio_file_path = patch_path('data/audio_samples/example.mp3')
+    from mxnet_audio.library.utility.audio_utils import compute_melgram
+
     arr = compute_melgram(audio_file_path)
     print('melgram: ', arr.shape)
 

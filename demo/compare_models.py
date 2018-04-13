@@ -3,8 +3,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+def patch_path(path):
+    return os.path.join(os.path.dirname(__file__), path)
+
+
 def main():
-    model_dir_path = './models'
+    model_dir_path = patch_path('models')
     models = ['cifar10', 'resnet-v2']
     acc_cmp = dict()
     val_acc_cmp = dict()
