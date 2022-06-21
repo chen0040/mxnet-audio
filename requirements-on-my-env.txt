@@ -13,7 +13,7 @@ lru-dict==1.1.6
 matplotlib==2.2.2
 mxnet-cu90==1.2.0b20180403
 numba==0.37.0
-numpy==1.14.2
+numpy==1.22.0
 pyparsing==2.2.0
 python-dateutil==2.7.2
 pytz==2018.3
